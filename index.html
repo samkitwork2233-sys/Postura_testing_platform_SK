@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Postura V3 Testing Platform</title>
 
 <style>
@@ -22,23 +22,19 @@ padding:18px;
 font-size:24px;
 }
 
-.container{
-padding:20px;
-}
-
 button{
-padding:12px 18px;
+padding:10px 18px;
 margin:6px;
-font-size:14px;
 border:none;
 border-radius:6px;
 cursor:pointer;
+font-size:14px;
 }
 
 .connect{background:#3498db;color:white;}
+.session{background:#f39c12;color:white;}
 .start{background:#27ae60;color:white;}
 .stop{background:#e74c3c;color:white;}
-.export{background:#8e44ad;color:white;}
 
 .card{
 background:white;
@@ -53,11 +49,6 @@ box-shadow:0 3px 10px rgba(0,0,0,0.15);
 .metric{
 font-size:18px;
 margin:8px;
-}
-
-#status{
-font-size:22px;
-font-weight:bold;
 }
 
 .good{color:green;}
@@ -80,73 +71,60 @@ th{
 background:#f4f4f4;
 }
 
-footer{
-margin-top:35px;
-padding:10px;
-font-size:13px;
-color:#555;
-}
-
 </style>
 
 </head>
 
 <body>
 
-<header>
+<header>POSTURA V3 TESTING PLATFORM</header>
 
-POSTURA V3 TESTING DASHBOARD
-
-</header>
-
-<div class="container">
+<br>
 
 <button class="connect" onclick="connectDevice()">Connect Device</button>
-<button class="start" onclick="startTest()">Start Test</button>
-<button class="stop" onclick="stopTest()">Stop Test</button>
-<button class="export" onclick="exportCSV()">Export CSV</button>
+<button class="session" onclick="createSession()">Create Session</button>
+<button class="start" onclick="startSession()">Start Recording</button>
+<button class="stop" onclick="stopSession()">End Session</button>
 
 <h3 id="connection">Device: Not Connected</h3>
 
 <div class="card">
 
 <div class="metric">Status: <span id="status">--</span></div>
-
 <div class="metric">Angle: <span id="angle">0</span>°</div>
-
 <div class="metric">Slouch Count: <span id="slouch">0</span></div>
-
-<div class="metric">Slouch Time: <span id="time">0</span>s</div>
-
 <div class="metric">Score: <span id="score">0</span></div>
 
 </div>
 
-<h2>Experiment Log</h2>
+<h2>Session Results</h2>
 
-<table id="logTable">
+<table id="sessionTable">
 
 <tr>
-<th>Time</th>
-<th>Angle</th>
+<th>User</th>
+<th>Session Time (s)</th>
 <th>Slouch Count</th>
-<th>Slouch Time</th>
-<th>Status</th>
-<th>Score</th>
+<th>Avg Backbone Angle</th>
+<th>Posture Score</th>
 </tr>
 
 </table>
 
-</div>
-
-<footer>
-Postura Research Testing Interface
-</footer>
-
 <script>
 
 let characteristic;
+
 let logging=false;
+let username="";
+
+let sessionStart;
+
+let angleSum=0;
+let sampleCount=0;
+
+let finalSlouch=0;
+let finalScore=0;
 
 async function connectDevice(){
 
@@ -155,7 +133,7 @@ filters:[{namePrefix:"POSTURA"}],
 optionalServices:["12345678-1234-1234-1234-1234567890ab"]
 });
 
-document.getElementById("connection").innerText="Device: Connected";
+document.getElementById("connection").innerText="Device Connected";
 
 const server = await device.gatt.connect();
 
@@ -176,87 +154,82 @@ handleData
 
 }
 
-function startTest(){
-logging=true;
+function createSession(){
+
+username=prompt("Enter user name");
+
 }
 
-function stopTest(){
+function startSession(){
+
+if(username===""){
+alert("Create session first");
+return;
+}
+
+sessionStart=Date.now();
+
+angleSum=0;
+sampleCount=0;
+
+logging=true;
+
+}
+
+function stopSession(){
+
 logging=false;
+
+let sessionTime=(Date.now()-sessionStart)/1000;
+
+let avgAngle=(angleSum/sampleCount).toFixed(2);
+
+let table=document.getElementById("sessionTable");
+
+let row=table.insertRow(-1);
+
+row.insertCell(0).innerText=username;
+row.insertCell(1).innerText=sessionTime;
+row.insertCell(2).innerText=finalSlouch;
+row.insertCell(3).innerText=avgAngle;
+row.insertCell(4).innerText=finalScore;
+
 }
 
 function handleData(event){
 
-let value = new TextDecoder().decode(event.target.value);
+let value=new TextDecoder().decode(event.target.value);
 
-let data = value.split(",");
+let data=value.split(",");
 
-let angle = data[0];
-let slouch = data[1];
-let time = data[2];
-let status = data[3];
-let score = data[4];
+let angle=parseFloat(data[0]);
+let slouch=data[1];
+let status=data[3];
+let score=data[4];
 
 document.getElementById("angle").innerText=angle;
 document.getElementById("slouch").innerText=slouch;
-document.getElementById("time").innerText=time;
 document.getElementById("score").innerText=score;
 
-let statusElement=document.getElementById("status");
+let statusEl=document.getElementById("status");
 
-statusElement.innerText=status;
+statusEl.innerText=status;
 
 if(status==="GOOD"){
-statusElement.className="good";
+statusEl.className="good";
 }else{
-statusElement.className="bad";
+statusEl.className="bad";
 }
 
 if(logging){
 
-let table=document.getElementById("logTable");
+angleSum+=angle;
+sampleCount++;
 
-let row=table.insertRow(-1);
-
-let currentTime=new Date().toLocaleTimeString();
-
-row.insertCell(0).innerText=currentTime;
-row.insertCell(1).innerText=angle;
-row.insertCell(2).innerText=slouch;
-row.insertCell(3).innerText=time;
-row.insertCell(4).innerText=status;
-row.insertCell(5).innerText=score;
+finalSlouch=slouch;
+finalScore=score;
 
 }
-
-}
-
-function exportCSV(){
-
-let table=document.getElementById("logTable");
-
-let csv=[];
-
-for(let i=0;i<table.rows.length;i++){
-
-let row=[];
-let cols=table.rows[i].querySelectorAll("td,th");
-
-for(let j=0;j<cols.length;j++)
-row.push(cols[j].innerText);
-
-csv.push(row.join(","));
-
-}
-
-let csvFile=new Blob([csv.join("\n")],{type:"text/csv"});
-
-let link=document.createElement("a");
-
-link.download="postura_test_results.csv";
-
-link.href=window.URL.createObjectURL(csvFile);
-
-link.click();
 
 }
 
