@@ -1,0 +1,1 @@
+# Postura_testing_platform_SK
