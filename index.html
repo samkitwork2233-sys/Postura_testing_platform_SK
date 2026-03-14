@@ -37,6 +37,7 @@ cursor:pointer;
 .start{background:#27ae60;color:white;}
 .stop{background:#e74c3c;color:white;}
 .export{background:#8e44ad;color:white;}
+.clear{background:#34495e;color:white;}
 
 .card{
 background:white;
@@ -94,6 +95,7 @@ max-width:800px;
 <button class="start" onclick="startSession()">Start Recording</button>
 <button class="stop" onclick="stopSession()">End Session</button>
 <button class="export" onclick="exportCSV()">Export CSV</button>
+<button class="clear" onclick="clearSessions()">Clear Sessions</button>
 
 <h3 id="connection">Device: Not Connected</h3>
 
@@ -335,6 +337,18 @@ link.download="postura_session_results.csv";
 link.href=window.URL.createObjectURL(blob);
 
 link.click();
+
+}
+
+function clearSessions(){
+
+let table=document.getElementById("sessionTable");
+
+while(table.rows.length>1){
+table.deleteRow(1);
+}
+
+sessionID=0;
 
 }
 
