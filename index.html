@@ -6,8 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Postura V3 Testing Platform</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 
 body{
@@ -74,10 +72,11 @@ th{
 background:#f4f4f4;
 }
 
-canvas{
-background:white;
-margin-top:30px;
-max-width:800px;
+#currentUser{
+font-size:18px;
+margin-top:10px;
+font-weight:bold;
+color:#2c3e50;
 }
 
 </style>
@@ -87,6 +86,8 @@ max-width:800px;
 <body>
 
 <header>POSTURA V3 TESTING PLATFORM</header>
+
+<div id="currentUser">User: None</div>
 
 <br>
 
@@ -108,8 +109,6 @@ max-width:800px;
 <div class="metric">Score: <span id="score">0</span></div>
 
 </div>
-
-<canvas id="angleChart"></canvas>
 
 <h2>Session Results</h2>
 
@@ -144,26 +143,6 @@ let sampleCount=0;
 
 let finalSlouch=0;
 
-const ctx=document.getElementById("angleChart");
-
-let chart=new Chart(ctx,{
-type:'line',
-data:{
-labels:[],
-datasets:[{
-label:'Backbone Angle',
-data:[]
-}]
-},
-options:{
-animation:false,
-scales:{
-y:{title:{display:true,text:"Angle"}},
-x:{title:{display:true,text:"Samples"}}
-}
-}
-});
-
 async function connectDevice(){
 
 const device=await navigator.bluetooth.requestDevice({
@@ -196,6 +175,10 @@ function createSession(){
 
 username=prompt("Enter user name");
 
+if(username){
+document.getElementById("currentUser").innerText="User: "+username;
+}
+
 }
 
 async function startSession(){
@@ -212,10 +195,6 @@ sessionStart=Date.now();
 angleSum=0;
 scoreSum=0;
 sampleCount=0;
-
-chart.data.labels=[];
-chart.data.datasets[0].data=[];
-chart.update();
 
 logging=true;
 
@@ -301,11 +280,6 @@ scoreSum+=score;
 sampleCount++;
 
 finalSlouch=slouch;
-
-chart.data.labels.push(sampleCount);
-chart.data.datasets[0].data.push(angle);
-
-chart.update();
 
 }
 
