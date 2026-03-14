@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Postura V3 Testing Platform</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#eef2f7;
+margin:0;
+text-align:center;
+}
+
+header{
+background:#2c3e50;
+color:white;
+padding:18px;
+font-size:24px;
+}
+
+.container{
+padding:20px;
+}
+
+button{
+padding:12px 18px;
+margin:6px;
+font-size:14px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.connect{background:#3498db;color:white;}
+.start{background:#27ae60;color:white;}
+.stop{background:#e74c3c;color:white;}
+.export{background:#8e44ad;color:white;}
+
+.card{
+background:white;
+width:320px;
+margin:auto;
+padding:18px;
+margin-top:20px;
+border-radius:10px;
+box-shadow:0 3px 10px rgba(0,0,0,0.15);
+}
+
+.metric{
+font-size:18px;
+margin:8px;
+}
+
+#status{
+font-size:22px;
+font-weight:bold;
+}
+
+.good{color:green;}
+.bad{color:red;}
+
+table{
+margin:auto;
+margin-top:25px;
+border-collapse:collapse;
+width:90%;
+background:white;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:8px;
+}
+
+th{
+background:#f4f4f4;
+}
+
+footer{
+margin-top:35px;
+padding:10px;
+font-size:13px;
+color:#555;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+POSTURA V3 TESTING DASHBOARD
+
+</header>
+
+<div class="container">
+
+<button class="connect" onclick="connectDevice()">Connect Device</button>
+<button class="start" onclick="startTest()">Start Test</button>
+<button class="stop" onclick="stopTest()">Stop Test</button>
+<button class="export" onclick="exportCSV()">Export CSV</button>
+
+<h3 id="connection">Device: Not Connected</h3>
+
+<div class="card">
+
+<div class="metric">Status: <span id="status">--</span></div>
+
+<div class="metric">Angle: <span id="angle">0</span>°</div>
+
+<div class="metric">Slouch Count: <span id="slouch">0</span></div>
+
+<div class="metric">Slouch Time: <span id="time">0</span>s</div>
+
+<div class="metric">Score: <span id="score">0</span></div>
+
+</div>
+
+<h2>Experiment Log</h2>
+
+<table id="logTable">
+
+<tr>
+<th>Time</th>
+<th>Angle</th>
+<th>Slouch Count</th>
+<th>Slouch Time</th>
+<th>Status</th>
+<th>Score</th>
+</tr>
+
+</table>
+
+</div>
+
+<footer>
+Postura Research Testing Interface
+</footer>
+
+<script>
+
+let characteristic;
+let logging=false;
+
+async function connectDevice(){
+
+const device = await navigator.bluetooth.requestDevice({
+filters:[{namePrefix:"POSTURA"}],
+optionalServices:["12345678-1234-1234-1234-1234567890ab"]
+});
+
+document.getElementById("connection").innerText="Device: Connected";
+
+const server = await device.gatt.connect();
+
+const service = await server.getPrimaryService(
+"12345678-1234-1234-1234-1234567890ab"
+);
+
+characteristic = await service.getCharacteristic(
+"abcdefab-1234-1234-1234-abcdefabcdef"
+);
+
+await characteristic.startNotifications();
+
+characteristic.addEventListener(
+"characteristicvaluechanged",
+handleData
+);
+
+}
+
+function startTest(){
+logging=true;
+}
+
+function stopTest(){
+logging=false;
+}
+
+function handleData(event){
+
+let value = new TextDecoder().decode(event.target.value);
+
+let data = value.split(",");
+
+let angle = data[0];
+let slouch = data[1];
+let time = data[2];
+let status = data[3];
+let score = data[4];
+
+document.getElementById("angle").innerText=angle;
+document.getElementById("slouch").innerText=slouch;
+document.getElementById("time").innerText=time;
+document.getElementById("score").innerText=score;
+
+let statusElement=document.getElementById("status");
+
+statusElement.innerText=status;
+
+if(status==="GOOD"){
+statusElement.className="good";
+}else{
+statusElement.className="bad";
+}
+
+if(logging){
+
+let table=document.getElementById("logTable");
+
+let row=table.insertRow(-1);
+
+let currentTime=new Date().toLocaleTimeString();
+
+row.insertCell(0).innerText=currentTime;
+row.insertCell(1).innerText=angle;
+row.insertCell(2).innerText=slouch;
+row.insertCell(3).innerText=time;
+row.insertCell(4).innerText=status;
+row.insertCell(5).innerText=score;
+
+}
+
+}
+
+function exportCSV(){
+
+let table=document.getElementById("logTable");
+
+let csv=[];
+
+for(let i=0;i<table.rows.length;i++){
+
+let row=[];
+let cols=table.rows[i].querySelectorAll("td,th");
+
+for(let j=0;j<cols.length;j++)
+row.push(cols[j].innerText);
+
+csv.push(row.join(","));
+
+}
+
+let csvFile=new Blob([csv.join("\n")],{type:"text/csv"});
+
+let link=document.createElement("a");
+
+link.download="postura_test_results.csv";
+
+link.href=window.URL.createObjectURL(csvFile);
+
+link.click();
+
+}
+
+</script>
+
+</body>
+
+</html>
